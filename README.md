@@ -1,3 +1,3 @@
 # tripstring
 
-File intrusion detection, done light in golang.
+File intrusion detection, done light, in golang.
