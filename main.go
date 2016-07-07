@@ -6,9 +6,11 @@ import (
 	"io"
 	"os"
 	"syscall"
-	"time"
+	//"time"
 )
 
+// GetFileMd5 accepts absolute or relative filepath string.
+// Returns the md5 hash sum as byte slice.
 func GetFileMd5(filePath string) ([]byte, error) {
 	var result []byte
 	file, err := os.Open(filePath)
@@ -34,21 +36,45 @@ func GetFileInode(filepath string) (uint64, error) {
 	return stat.Ino, nil
 }
 
+func GetFileInfoWorker(filepath string, jobchan <-chan string) {
+	if b, err := GetFileMd5(filepath); err != nil {
+		fmt.Printf("Checksum Err: %v\n", err)
+	} else {
+		fmt.Printf("%s md5 checksum is: %x\n", filepath, b)
+	}
+	if ino, err := GetFileInode(filepath); err != nil {
+		fmt.Println("Inode Err: %v\n", err)
+	} else {
+		fmt.Printf("%s inode is: %d\n", filepath, ino)
+	}
+
+}
+
 func main() {
-	const filename string = "test.txt"
+	//const filename string = "test.txt"
 	// slice of filename strings (could create struct soon for this)
-	//var files = []string{"test1.txt", "test2.txt", "test3.txt"}
+	var files = []string{"test1.txt", "test2.txt", "test3.txt"}
+	// hardcoded for now as the test files above.
+	jobchan := make(chan string, len(files))
 	for {
-		if b, err := GetFileMd5(filename); err != nil {
-			fmt.Printf("Checksum Err: %v\n", err)
-		} else {
-			fmt.Printf("%s md5 checksum is: %x\n", filename, b)
+		// Create the relevent workers for the job
+		for _, file := range files {
+			go GetFileInfoWorker(file, jobchan)
 		}
-		if ino, err := GetFileInode(filename); err != nil {
-			fmt.Println("Inode Err: %v\n", err)
-		} else {
-			fmt.Printf("%s inode is: %d\n", filename, ino)
+		for _, f := range files {
+			jobchan <- f
 		}
-		time.Sleep(time.Second * 15)
+		//close(jobchan)
+		//if b, err := GetFileMd5(filename); err != nil {
+		//	fmt.Printf("Checksum Err: %v\n", err)
+		//} else {
+		//	fmt.Printf("%s md5 checksum is: %x\n", filename, b)
+		//}
+		//if ino, err := GetFileInode(filename); err != nil {
+		//	fmt.Println("Inode Err: %v\n", err)
+		//} else {
+		//	fmt.Printf("%s inode is: %d\n", filename, ino)
+		//}
+		//time.Sleep(time.Second * 15)
 	}
 }
